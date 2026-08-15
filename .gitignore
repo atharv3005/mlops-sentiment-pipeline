@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+mlruns/
+mlflow.db
+data/processed/
+data/prediction_logs.jsonl
+!data/processed/.gitkeep
+*.pkl
+.env
+.DS_Store

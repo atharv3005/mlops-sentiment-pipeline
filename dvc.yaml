@@ -1,0 +1,34 @@
+stages:
+  data_prep:
+    cmd: python src/data_prep.py
+    deps:
+      - src/data_prep.py
+      - data/raw/reviews.csv
+    params:
+      - data_prep.test_size
+      - data_prep.random_state
+    outs:
+      - data/processed/train.csv
+      - data/processed/test.csv
+      - data/processed/baseline_stats.json
+
+  train:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/processed/train.csv
+      - data/processed/test.csv
+    params:
+      - train.max_features
+      - train.ngram_range_min
+      - train.ngram_range_max
+      - train.C
+      - train.max_iter
+      - train.random_state
+      - train.min_accuracy_threshold
+    outs:
+      - models/model.pkl
+      - models/vectorizer.pkl
+    metrics:
+      - models/metrics.json:
+          cache: false

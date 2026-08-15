@@ -1,0 +1,44 @@
+name: Drift Check & Auto-Retrain
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"   # every Monday 03:00 UTC — adjust to your traffic volume
+  workflow_dispatch: {}    # lets you trigger it manually from the Actions tab
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # In production, replace this with a step that pulls real
+      # prediction_logs.jsonl from wherever your deployed API persists
+      # it (S3, a mounted volume, a logging DB) before checking drift.
+      - name: Check for drift
+        id: drift
+        run: |
+          python src/monitor_drift.py
+          echo "drift_detected=$?" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Retrain if drift detected
+        if: steps.drift.outputs.drift_detected == '1'
+        run: python src/retrain.py
+
+      - name: Commit updated model + reports
+        if: steps.drift.outputs.drift_detected == '1'
+        run: |
+          git config user.name "mlops-bot"
+          git config user.email "mlops-bot@users.noreply.github.com"
+          git add models/ data/processed/baseline_stats.json
+          git diff --cached --quiet || git commit -m "Auto-retrain: drift detected [skip ci]"
+          git push

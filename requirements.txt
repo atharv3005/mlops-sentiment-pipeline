@@ -5,3 +5,5 @@ dvc
 fastapi
 uvicorn
 pytest
+httpx
+httpx2

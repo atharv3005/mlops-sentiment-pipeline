@@ -13,7 +13,8 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def client():
     from serve import app  # imported lazily so the skip check above runs first
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 def test_health_endpoint(client):

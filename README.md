@@ -82,17 +82,66 @@ python src/monitor_drift.py   # writes models/drift_report.json, exit code 1 if 
 python src/retrain.py         # only runs if you want to force a retrain manually
 ```
 
-## Extending it for a real dataset
+## Using the full IMDB dataset
 
 The included `data/raw/reviews.csv` is a small demo set so the whole
-pipeline runs in seconds without any external downloads. To use a real
-dataset (IMDB, Yelp, Amazon reviews, etc.):
+pipeline runs in seconds with nothing to download. `src/prepare_imdb.py`
+swaps it for the real Stanford IMDB dataset (50,000 labeled reviews).
 
-1. Swap in the full CSV at `data/raw/reviews.csv` (same `text,label` schema).
-2. Point DVC at real remote storage instead of the local placeholder in
-   `.dvc/config` — instructions for S3 and Google Drive (both usable on
-   free tiers) are commented in that file.
-3. `dvc add data/raw/reviews.csv && dvc push` to version and upload it.
+**1. Download and convert it (run locally — needs internet):**
+```bash
+pip install -r requirements.txt
+python src/prepare_imdb.py                    # full 50k reviews, ~80MB download
+# or, for a faster CI loop:
+python src/prepare_imdb.py --sample-size 10000  # balanced 10k subset
+```
+This overwrites `data/raw/reviews.csv` with the same `text,label` schema,
+so nothing downstream (`data_prep.py`, `train.py`, `dvc.yaml`) needs to change.
+
+**2. Set up the Google Drive remote (one-time, local):**
+```bash
+dvc init                       # if you haven't already
+```
+- Create a folder in Google Drive, copy its ID from the URL
+  (`drive.google.com/drive/folders/<FOLDER_ID>`)
+- Put that ID in `.dvc/config` in place of `YOUR_FOLDER_ID_HERE`
+
+**3. Track and push the data:**
+```bash
+dvc add data/raw/reviews.csv
+git add data/raw/reviews.csv.dvc data/raw/.gitignore .dvc/config
+git commit -m "Swap demo data for full IMDB dataset"
+dvc push        # opens a browser OAuth prompt the first time
+```
+
+**4. Let CI pull it too (GitHub Actions can't do interactive OAuth):**
+1. In Google Cloud Console, create a service account, generate a JSON key
+2. Share your Drive folder with the service account's email address (Editor access)
+3. In your GitHub repo: **Settings → Secrets and variables → Actions →
+   New repository secret**, name it `GDRIVE_SA_JSON`, paste the full JSON
+   key content
+4. That's it — `ci-cd.yml` already has the `dvc pull` step wired up; it
+   activates automatically once the secret exists.
+
+To use a different dataset (Yelp, Amazon reviews, etc.) instead: write
+your own version of `prepare_imdb.py` that outputs the same `text,label`
+CSV schema, and everything else in the pipeline stays unchanged.
+
+## Dashboard
+
+`dashboard/app.py` is a Streamlit dashboard showing current model
+metrics, MLflow run history (with an accuracy-over-time chart and
+registered model versions), and the latest drift report.
+
+```bash
+docker compose up          # dashboard on :8501, mlflow on :5000, api on :8000
+# or run it standalone:
+export MLFLOW_TRACKING_URI=http://localhost:5000
+streamlit run dashboard/app.py
+```
+
+It degrades gracefully — if MLflow isn't reachable yet or no drift report
+exists yet, each panel shows an explanatory message instead of erroring out.
 
 ## What to say about it in an interview
 

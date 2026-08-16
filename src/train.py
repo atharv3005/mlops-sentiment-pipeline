@@ -9,7 +9,6 @@ params.yaml — this is what lets CI fail a bad training run before it
 ever gets deployed.
 """
 import json
-import re
 import sys
 import joblib
 import mlflow
@@ -22,18 +21,6 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from utils import ROOT, load_params
 
 MODEL_NAME = "sentiment-classifier"
-
-
-def parse_threshold(value):
-    if isinstance(value, (int, float)):
-        return float(value)
-
-    if isinstance(value, str):
-        values = re.findall(r"[-+]?(?:\d+\.\d+|\d+)", value)
-        if values:
-            return min(float(v) for v in values)
-
-    raise ValueError(f"Unsupported accuracy threshold value: {value!r}")
 
 
 def main():
@@ -87,8 +74,7 @@ def main():
         with open(models_dir / "metrics.json", "w") as f:
             json.dump(metrics, f, indent=2)
 
-    threshold = parse_threshold(p["min_accuracy_threshold"])
-    if metrics["accuracy"] < threshold:
+    if metrics["accuracy"] < p["min_accuracy_threshold"]:
         print(
             f"FAILED: accuracy {metrics['accuracy']:.3f} is below "
             f"threshold {p['min_accuracy_threshold']}"

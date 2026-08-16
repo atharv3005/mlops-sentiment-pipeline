@@ -12,6 +12,12 @@ env:
 jobs:
   test-and-train:
     runs-on: ubuntu-latest
+    env:
+      # Set this repo secret once you've swapped in the full IMDB dataset
+      # via `dvc add` + a Google Drive remote (see README "Using the full
+      # IMDB dataset"). Until it's set, this step is skipped and CI just
+      # uses whatever CSV is checked directly into git.
+      GDRIVE_SA_JSON: ${{ secrets.GDRIVE_SA_JSON }}
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +29,17 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Configure DVC Google Drive service account
+        if: env.GDRIVE_SA_JSON != ''
+        run: |
+          echo "$GDRIVE_SA_JSON" > gdrive-sa.json
+          dvc remote modify gdrive-storage gdrive_use_service_account true
+          dvc remote modify gdrive-storage gdrive_service_account_json_file_path gdrive-sa.json
+
+      - name: Pull data from DVC remote
+        if: env.GDRIVE_SA_JSON != ''
+        run: dvc pull
 
       - name: Prepare data
         run: python src/data_prep.py

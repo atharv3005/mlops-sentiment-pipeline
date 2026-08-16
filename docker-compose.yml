@@ -25,5 +25,20 @@ services:
     volumes:
       - ./data:/app/data   # so prediction_logs.jsonl persists for drift checks
 
+  dashboard:
+    image: python:3.11-slim
+    working_dir: /app
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt &&
+               streamlit run dashboard/app.py --server.address 0.0.0.0 --server.port 8501"
+    ports:
+      - "8501:8501"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - mlflow
+    volumes:
+      - .:/app
+
 volumes:
   mlflow-data:

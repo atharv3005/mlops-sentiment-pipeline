@@ -9,7 +9,7 @@ train:
   C: 1.0
   max_iter: 1000
   random_state: 42
-  min_accuracy_threshold: 0.5           # CI fails the build below this
+  min_accuracy_threshold: 0.70   # CI fails the build below this
 
 drift:
   text_length_ks_pvalue_threshold: 0.05   # below this => distribution shift flagged

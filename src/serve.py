@@ -6,8 +6,8 @@ reads to compare live traffic against the training-time baseline.
 """
 import json
 import time
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import joblib
 from fastapi import FastAPI, HTTPException
@@ -15,13 +15,13 @@ from pydantic import BaseModel
 
 from utils import ROOT, clean_text
 
-
 MODEL_PATH = ROOT / "models" / "model.pkl"
 VECTORIZER_PATH = ROOT / "models" / "vectorizer.pkl"
 LOG_PATH = ROOT / "data" / "prediction_logs.jsonl"
 
 model = None
 vectorizer = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,8 +34,11 @@ async def lifespan(app: FastAPI):
     model = joblib.load(MODEL_PATH)
     vectorizer = joblib.load(VECTORIZER_PATH)
     yield
+    # nothing to clean up on shutdown
+
 
 app = FastAPI(title="Sentiment Classifier API", version="1.0.0", lifespan=lifespan)
+
 
 class PredictRequest(BaseModel):
     text: str

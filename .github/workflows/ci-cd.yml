@@ -37,7 +37,11 @@ jobs:
           dvc remote modify gdrive-storage gdrive_use_service_account true
           dvc remote modify gdrive-storage gdrive_service_account_json_file_path gdrive-sa.json
 
+<<<<<<< HEAD
       - name: Pull raw data from DVC remote
+=======
+        - name: Pull data from DVC remote
+>>>>>>> a94b4eea51380d619ad2848aa9bda4d129844d7b
         if: env.GDRIVE_SA_JSON != ''
         run: dvc pull data/raw/reviews.csv
 
